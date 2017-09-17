@@ -1,0 +1,101 @@
+<html>
+
+<head>
+
+</head>
+
+<body>
+    <ul class="intermediate">
+        <li>hi</li>
+    </ul>
+</body>
+
+</html>
+
+
+<script>
+    window.glob = function() {
+        if (!glob.symbol)
+            window.glob.symbol = Symbol('domUtils');
+
+        return window.glob.symbol;
+    }
+
+    window[glob()] = function(name, obj) {
+
+        //Allows the user to name the function
+        var domUtils = {
+            [name](selector) {
+                if (!selector) {
+                    domUtils.elements = []
+                    return;
+                }
+                domUtils.elements = typeof selector == 'string' ?
+                    Array.prototype.slice.call(document.querySelectorAll(selector)) : selector instanceof NodeList ?
+                    Array.prototype.slice.call(selector) : selector.nodeName ? [selector] : [];
+                return domUtils;
+            }
+        }[name]
+
+        //Where elements will be stored
+        domUtils.elements = [];
+
+        //Extension function, extends the object safely.
+        domUtils.extend = function(key, val) {
+            if (domUtils[key]) throw new Error('Key is already defined on object, unsafe operation');
+            domUtils[key] = val;
+        }
+
+        domUtils.on = function() {
+            const args = arguments;
+            domUtils.elements.forEach(function(e) {
+                if (e.addEventListener) {
+                    e.addEventListener.apply(e, Array.prototype.slice.call(args))
+                }
+            })
+        }
+
+        domUtils.remove = function() {
+            const args = arguments;
+            domUtils.elements.forEach(function(e) {
+                if (e.removeEventListener) {
+                    e.removeEventListener.apply(e, Array.prototype.slice.call(args))
+                }
+            })
+        }
+
+        //Sets up the prototype (Array.prototype has non-enumerable properties)
+        const proto = {}
+        Object.getOwnPropertyNames(Array.prototype).forEach(function(key) {
+            if (!(typeof Array.prototype[key] == 'function')) return;
+            proto[key] = function() {
+                let args = Array.prototype.slice.call(arguments)
+                args = args.map(function(arg) {
+                    if (typeof arg == 'function') return arg.bind(domUtils.elements);
+                })
+                return Array.prototype[key].apply(domUtils.elements, args);
+            }
+        })
+
+
+        //Set the prototype
+        Object.setPrototypeOf(domUtils.__proto__, proto);
+
+        //Put in the correct namespace
+        const namespace = obj ? obj : window;
+        namespace[name] = domUtils;
+
+        //return the public API.
+        return domUtils;
+    }
+
+    window[glob()]('select');
+
+
+    const forEachLi = select('ul.intermediate li').forEach;
+    forEachLi(function(ele, index) {
+        select(ele).on('click', function() {
+            this.innerHTML = 'bye';
+        })
+    })
+</script>
