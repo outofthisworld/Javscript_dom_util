@@ -23,7 +23,7 @@
 
     window[glob()] = function(name, obj) {
 
-        //Allows the user to name the function
+        /*============== OBJECT SET UP ================*/
         var domUtils = {
             [name](selector) {
                 if (!selector) {
@@ -40,30 +40,6 @@
         //Where elements will be stored
         domUtils.elements = [];
 
-        //Extension function, extends the object safely.
-        domUtils.extend = function(key, val) {
-            if (domUtils[key]) throw new Error('Key is already defined on object, unsafe operation');
-            domUtils[key] = val;
-        }
-
-        domUtils.on = function() {
-            const args = arguments;
-            domUtils.elements.forEach(function(e) {
-                if (e.addEventListener) {
-                    e.addEventListener.apply(e, Array.prototype.slice.call(args))
-                }
-            })
-        }
-
-        domUtils.remove = function() {
-            const args = arguments;
-            domUtils.elements.forEach(function(e) {
-                if (e.removeEventListener) {
-                    e.removeEventListener.apply(e, Array.prototype.slice.call(args))
-                }
-            })
-        }
-
         //Sets up the prototype (Array.prototype has non-enumerable properties)
         const proto = {}
         Object.getOwnPropertyNames(Array.prototype).forEach(function(key) {
@@ -76,16 +52,52 @@
                 return Array.prototype[key].apply(domUtils.elements, args);
             }
         })
-
-
-        //Set the prototype
         Object.setPrototypeOf(domUtils.__proto__, proto);
 
-        //Put in the correct namespace
+        /*============== END OBJECT SET UP ================*/
+
+
+        /*===========  PUBLIC API ==================*/
+        domUtils.extend = function(obj) {
+            if (!obj) throw new Error('Invalid object passed to extend');
+
+            for (key in obj) {
+                if (key in domUtils) throw new Error('Error duplicate key');
+
+                domUtils[key] = obj[key];
+            }
+            return domUtils;
+        }
+
+        domUtils.on = function() {
+            const args = arguments;
+            domUtils.elements.forEach(function(e) {
+                if (e.addEventListener) {
+                    e.addEventListener.apply(e, Array.prototype.slice.call(args))
+                }
+            })
+            return domUtils;
+        }
+
+        domUtils.remove = function() {
+                const args = arguments;
+                domUtils.elements.forEach(function(e) {
+                    if (e.removeEventListener) {
+                        e.removeEventListener.apply(e, Array.prototype.slice.call(args))
+                    }
+                })
+                return domUtils;
+            }
+            /*================ END PUBLIC API ====================*/
+
+
+        /* NAMESPACE */
         const namespace = obj ? obj : window;
         namespace[name] = domUtils;
+        /* END NAMESPACE */
 
-        //return the public API.
+
+        /* RETURN */
         return domUtils;
     }
 
